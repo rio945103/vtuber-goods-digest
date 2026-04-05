@@ -20,7 +20,11 @@ def init_db(conn: sqlite3.Connection) -> None:
             title TEXT NOT NULL,
             raw_text TEXT NOT NULL,
             source_type TEXT NOT NULL,
-            first_seen_at TEXT NOT NULL
+            current_status TEXT NOT NULL,
+            first_seen_at TEXT NOT NULL,
+            last_seen_at TEXT NOT NULL,
+            upcoming_notified INTEGER NOT NULL DEFAULT 0,
+            on_sale_notified INTEGER NOT NULL DEFAULT 0
         )
         """
     )
@@ -40,16 +44,13 @@ def init_db(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
-def get_item_id_by_url(conn: sqlite3.Connection, url: str) -> int | None:
+def get_item_by_url(conn: sqlite3.Connection, url: str) -> sqlite3.Row | None:
     row = conn.execute(
-        "SELECT id FROM items WHERE url = ?",
+        "SELECT * FROM items WHERE url = ?",
         (url,),
     ).fetchone()
 
-    if row is None:
-        return None
-
-    return int(row["id"])
+    return row
 
 
 def insert_item(
@@ -59,17 +60,92 @@ def insert_item(
     url: str,
     raw_text: str,
     source_type: str,
+    current_status: str,
     first_seen_at: str,
+    last_seen_at: str,
 ) -> int:
     cursor = conn.execute(
         """
-        INSERT INTO items (url, title, raw_text, source_type, first_seen_at)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO items (
+            url, title, raw_text, source_type,
+            current_status, first_seen_at, last_seen_at,
+            upcoming_notified, on_sale_notified
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)
         """,
-        (url, title, raw_text, source_type, first_seen_at),
+        (
+            url,
+            title,
+            raw_text,
+            source_type,
+            current_status,
+            first_seen_at,
+            last_seen_at,
+        ),
     )
     conn.commit()
     return int(cursor.lastrowid)
+
+
+def update_item_snapshot(
+    conn: sqlite3.Connection,
+    *,
+    item_id: int,
+    title: str,
+    raw_text: str,
+    source_type: str,
+    current_status: str,
+    last_seen_at: str,
+) -> None:
+    conn.execute(
+        """
+        UPDATE items
+        SET
+            title = ?,
+            raw_text = ?,
+            source_type = ?,
+            current_status = ?,
+            last_seen_at = ?
+        WHERE id = ?
+        """,
+        (
+            title,
+            raw_text,
+            source_type,
+            current_status,
+            last_seen_at,
+            item_id,
+        ),
+    )
+    conn.commit()
+
+
+def mark_notification_sent(
+    conn: sqlite3.Connection,
+    *,
+    item_id: int,
+    sale_status: str,
+) -> None:
+    if sale_status == "upcoming":
+        conn.execute(
+            """
+            UPDATE items
+            SET upcoming_notified = 1
+            WHERE id = ?
+            """,
+            (item_id,),
+        )
+    elif sale_status == "on_sale":
+        conn.execute(
+            """
+            UPDATE items
+            SET on_sale_notified = 1
+            WHERE id = ?
+            """,
+            (item_id,),
+        )
+
+    conn.commit()
 
 
 def link_item_member(
@@ -86,23 +162,3 @@ def link_item_member(
         (item_id, member_name),
     )
     conn.commit()
-
-
-def get_all_items_with_members(conn: sqlite3.Connection) -> list[sqlite3.Row]:
-    rows = conn.execute(
-        """
-        SELECT
-            items.id,
-            items.title,
-            items.url,
-            items.source_type,
-            items.first_seen_at,
-            item_members.member_name
-        FROM items
-        JOIN item_members
-          ON items.id = item_members.item_id
-        ORDER BY items.first_seen_at DESC, items.id DESC
-        """
-    ).fetchall()
-
-    return list(rows)

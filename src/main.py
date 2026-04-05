@@ -4,13 +4,20 @@ import requests
 from settings import load_env_settings, load_members
 from fetchers.nijisanji_store import create_session, fetch_html
 from parsers.nijisanji_parser import parse_member_items
-from filters.item_filter import build_item_label, build_sort_key, should_include_item
+from filters.item_filter import (
+    build_item_label,
+    build_sort_key,
+    detect_sale_status,
+    should_include_item,
+)
 from db import (
     connect_db,
-    get_item_id_by_url,
+    get_item_by_url,
     init_db,
     insert_item,
     link_item_member,
+    mark_notification_sent,
+    update_item_snapshot,
 )
 from notifiers.discord_notifier import build_discord_message, send_discord_message
 
@@ -27,7 +34,7 @@ def main() -> None:
     session = create_session()
 
     new_items_summary: list[tuple[str, tuple[int, int, int], str, str, str]] = []
-    current_run_new_urls: set[str] = set()
+    current_run_notified: dict[str, str] = {}
     failed_members: list[tuple[str, str]] = []
 
     for member in members:
@@ -60,33 +67,72 @@ def main() -> None:
         for order_index, item in enumerate(filtered_items):
             label = build_item_label(item)
             sort_key = build_sort_key(item, order_index)
-            existing_item_id = get_item_id_by_url(conn, item.url)
+            sale_status = detect_sale_status(item)
+            now_str = datetime.now().isoformat(timespec="seconds")
 
-            if existing_item_id is None:
+            existing_item = get_item_by_url(conn, item.url)
+
+            if existing_item is None:
                 item_id = insert_item(
                     conn,
                     title=item.title,
                     url=item.url,
                     raw_text=item.raw_text,
                     source_type=item.source_type,
-                    first_seen_at=datetime.now().isoformat(timespec="seconds"),
+                    current_status=sale_status,
+                    first_seen_at=now_str,
+                    last_seen_at=now_str,
                 )
                 link_item_member(conn, item_id=item_id, member_name=item.member_name)
 
-                current_run_new_urls.add(item.url)
-                new_items_summary.append((item.member_name, sort_key, label, item.title, item.url))
-            else:
-                link_item_member(
-                    conn,
-                    item_id=existing_item_id,
-                    member_name=item.member_name,
+                if sale_status in ("upcoming", "on_sale"):
+                    mark_notification_sent(conn, item_id=item_id, sale_status=sale_status)
+                    current_run_notified[item.url] = sale_status
+                    new_items_summary.append(
+                        (item.member_name, sort_key, label, item.title, item.url)
+                    )
+                continue
+
+            item_id = int(existing_item["id"])
+            link_item_member(conn, item_id=item_id, member_name=item.member_name)
+
+            update_item_snapshot(
+                conn,
+                item_id=item_id,
+                title=item.title,
+                raw_text=item.raw_text,
+                source_type=item.source_type,
+                current_status=sale_status,
+                last_seen_at=now_str,
+            )
+
+            # 同じ実行中に別メンバーでも同じ商品が通知対象になった時は、そのメンバーにも表示する
+            if current_run_notified.get(item.url) == sale_status:
+                new_items_summary.append(
+                    (item.member_name, sort_key, label, item.title, item.url)
+                )
+                continue
+
+            upcoming_notified = int(existing_item["upcoming_notified"])
+            on_sale_notified = int(existing_item["on_sale_notified"])
+
+            should_notify = False
+
+            if sale_status == "upcoming" and upcoming_notified == 0:
+                should_notify = True
+
+            if sale_status == "on_sale" and on_sale_notified == 0:
+                should_notify = True
+
+            if should_notify:
+                mark_notification_sent(conn, item_id=item_id, sale_status=sale_status)
+                current_run_notified[item.url] = sale_status
+                new_items_summary.append(
+                    (item.member_name, sort_key, label, item.title, item.url)
                 )
 
-                if item.url in current_run_new_urls:
-                    new_items_summary.append((item.member_name, sort_key, label, item.title, item.url))
-
     print("\n" + "=" * 60)
-    print("今回新しく保存された商品")
+    print("今回通知対象になった商品")
     print("=" * 60)
 
     if not new_items_summary:

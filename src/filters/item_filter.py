@@ -31,6 +31,19 @@ def should_include_item(item: StoreItem) -> bool:
     return True
 
 
+def detect_sale_status(item: StoreItem) -> str:
+    text = _combined_text(item)
+    lower_text = text.lower()
+
+    if "まもなく販売" in text or "もうすぐ発売" in text or "coming soon" in lower_text:
+        return "upcoming"
+
+    if "在庫なし" in text or "SOLD OUT" in text or "売り切れ" in text:
+        return "sold_out"
+
+    return "on_sale"
+
+
 def detect_item_category(item: StoreItem) -> str:
     text = _combined_text(item)
 
@@ -50,15 +63,21 @@ def detect_status_tags(item: StoreItem) -> list[str]:
     if "再販" in text:
         tags.append("再販")
 
-    if "まもなく販売" in text:
-        tags.append("まもなく販売")
-
     return tags
 
 
 def build_item_label(item: StoreItem) -> str:
-    parts = detect_status_tags(item)
+    parts: list[str] = []
+
+    sale_status = detect_sale_status(item)
+    if sale_status == "upcoming":
+        parts.append("もうすぐ発売")
+    elif sale_status == "on_sale":
+        parts.append("発売開始")
+
+    parts.extend(detect_status_tags(item))
     parts.append(detect_item_category(item))
+
     return "[" + " / ".join(parts) + "]"
 
 
