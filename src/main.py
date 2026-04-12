@@ -1,4 +1,6 @@
+#日付時刻のためのモジュール
 from datetime import datetime
+# HTTPリクエストを送るためのライブラリ
 import requests
 
 from settings import load_env_settings, load_members
