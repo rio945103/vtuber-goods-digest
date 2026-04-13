@@ -2,16 +2,20 @@
 from datetime import datetime
 # HTTPリクエストを送るためのライブラリ
 import requests
-
+#settingsファイルからload_env_settingsとload_members関数をインポート
 from settings import load_env_settings, load_members
+#fetchersのnijisanji_storeからcreate_sessionとfetch_html関数をインポート
 from fetchers.nijisanji_store import create_session, fetch_html
+#parsersのnijisanji_parserからparse_member_items関数をインポート
 from parsers.nijisanji_parser import parse_member_items
+#filtersのitem_filterからbuild_item_label, build_sort_key, detect_sale_status, should_include_item関数をインポート
 from filters.item_filter import (
     build_item_label,
     build_sort_key,
     detect_sale_status,
     should_include_item,
 )
+#dbからデータベース操作に関する関数をインポート
 from db import (
     connect_db,
     get_item_by_url,
@@ -21,50 +25,58 @@ from db import (
     mark_notification_sent,
     update_item_snapshot,
 )
+#notifiersのdiscord_notifierからbuild_discord_messageとsend_discord_message関数をインポート
 from notifiers.discord_notifier import build_discord_message, send_discord_message
 
 
 def main() -> None:
+    #env_settingsにload_env_settings関数の返り値を代入
     env_settings = load_env_settings()
+    #
     db_path = env_settings["DATABASE_PATH"]
+    #
     webhook_url = env_settings["DISCORD_WEBHOOK_URL"]
-
+    #connにconnect_db関数の返り値を代入（引数はdb_path）
     conn = connect_db(db_path)
+    #init_db関数を呼び出す（引数はconn）
     init_db(conn)
-
+    #membersにload_members関数の返り値を代入
     members = load_members()
+    #sessionにcreate_session関数の返り値を代入
     session = create_session()
-
+    #
     new_items_summary: list[tuple[str, tuple[int, int, int], str, str, str]] = []
+    #
     current_run_notified: dict[str, str] = {}
+    #
     failed_members: list[tuple[str, str]] = []
 
-    for member in members:
-        member_name = member["display_name"]
-        store_url = member["store_url"]
+    for member in members:  #for文でmembersの各要素をmemberに代入しながら繰り返す
+        member_name = member["display_name"]    #memberから"display_name"を取り出してmember_nameに代入
+        store_url = member["store_url"] #memberから"store_url"を取り出してstore_urlに代入
 
-        print("=" * 60)
-        print(f"対象: {member_name}")
-        print(f"URL: {store_url}")
+        print("=" * 60) #
+        print(f"対象: {member_name}")   #
+        print(f"URL: {store_url}")  #
 
-        try:
-            html = fetch_html(session, store_url)
-        except requests.RequestException as e:
-            print(f"取得失敗: {member_name}")
-            print(f"理由: {e}")
-            failed_members.append((member_name, str(e)))
-            continue
-
+        try:    #失敗するまで繰り返す
+            html = fetch_html(session, store_url)   #fetch_html関数を呼び出して、引数にsessionとstore_urlを渡し、その返り値をhtmlに代入
+        except requests.RequestException as e:  #
+            print(f"取得失敗: {member_name}")   #
+            print(f"理由: {e}") #
+            failed_members.append((member_name, str(e)))    #
+            continue    #繰り返す
+        
         items = parse_member_items(
             html=html,
             base_url=store_url,
             member_name=member_name,
-        )
+        )   #parse_member_items関数を呼び出して、引数にhtml、base_url=store_url、member_nameを渡し、その返り値をitemsに代入
 
-        filtered_items = [item for item in items if should_include_item(item)]
+        filtered_items = [item for item in items if should_include_item(item)]     #リストを用意しitemsからitemを一つずつ取り出してshould_include_item関数に渡し、Trueを返すものだけをfiltered_itemsに代入
 
-        print(f"抽出件数: {len(items)}")
-        print(f"フィルタ後件数: {len(filtered_items)}")
+        print(f"抽出件数: {len(items)}")    #
+        print(f"フィルタ後件数: {len(filtered_items)}")   #
 
         for order_index, item in enumerate(filtered_items):
             label = build_item_label(item)
