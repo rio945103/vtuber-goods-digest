@@ -78,15 +78,15 @@ def main() -> None:
         print(f"抽出件数: {len(items)}")    #
         print(f"フィルタ後件数: {len(filtered_items)}")   #
 
-        for order_index, item in enumerate(filtered_items):
-            label = build_item_label(item)
-            sort_key = build_sort_key(item, order_index)
-            sale_status = detect_sale_status(item)
-            now_str = datetime.now().isoformat(timespec="seconds")
+        for order_index, item in enumerate(filtered_items):     ## 何番目かを示すorder_indexとitemを同時に取り出しながら繰り返す
+            label = build_item_label(item)      #build_item_label関数を呼び出して、引数にitemを渡し、その返り値をlabelに代入
+            sort_key = build_sort_key(item, order_index)    #build_sort_key関数を呼び出して、引数にitemとorder_indexを渡し、その返り値をsort_keyに代入
+            sale_status = detect_sale_status(item)   #detect_sale_status関数を呼び出して、引数にitemを渡し、その返り値をsale_statusに代入
+            now_str = datetime.now().isoformat(timespec="seconds")  ## 現在時刻を文字列で取得
 
-            existing_item = get_item_by_url(conn, item.url)
+            existing_item = get_item_by_url(conn, item.url)     #get_item_by_url関数を呼び出して、引数にconnとitem.urlを渡し、その返り値をexisting_itemに代入
 
-            if existing_item is None:
+            if existing_item is None:   #
                 item_id = insert_item(
                     conn,
                     title=item.title,
@@ -96,16 +96,16 @@ def main() -> None:
                     current_status=sale_status,
                     first_seen_at=now_str,
                     last_seen_at=now_str,
-                )
-                link_item_member(conn, item_id=item_id, member_name=item.member_name)
+                )    #insert_item関数を呼び出して、引数にconn、title=item.title、url=item.url、raw_text=item.raw_text、source_type=item.source_type、current_status=sale_status、first_seen_at=now_str、last_seen_at=now_strを渡し、その返り値をitem_idに代入
+                link_item_member(conn, item_id=item_id, member_name=item.member_name)     #link_item_member関数を呼び出して、引数にconn、item_id=item_id、member_name=item.member_nameを渡す
 
-                if sale_status in ("upcoming", "on_sale"):
-                    mark_notification_sent(conn, item_id=item_id, sale_status=sale_status)
-                    current_run_notified[item.url] = sale_status
+                if sale_status in ("upcoming", "on_sale"):  #
+                    mark_notification_sent(conn, item_id=item_id, sale_status=sale_status)      #mark_notification_sent関数を呼び出して、引数にconn、item_id=item_id、sale_status=sale_statusを渡す
+                    current_run_notified[item.url] = sale_status    #
                     new_items_summary.append(
                         (item.member_name, sort_key, label, item.title, item.url)
-                    )
-                continue
+                    )   #new_items_summaryに(item.member_name, sort_key, label, item.title, item.url)を追加
+                continue    #
 
             item_id = int(existing_item["id"])
             link_item_member(conn, item_id=item_id, member_name=item.member_name)
