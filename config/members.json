@@ -3,12 +3,45 @@
     {
       "display_name": "elira-pendora",
       "keywords": ["Elira Pendora", "エリーラ ペンドラ", "elira-pendora"],
-      "store_url": "https://shop.nijisanji.jp/4002"
+      "store_url": "https://shop.nijisanji.jp/4002",
+      "store_type": "nijisanji"
     },
     {
       "display_name": "klara-charmwood",
       "keywords": ["Klara Charmwood", "クララ チャームウッド", "klara-charmwood"],
-      "store_url": "https://shop.nijisanji.jp/4042"
+      "store_url": "https://shop.nijisanji.jp/4042",
+      "store_type": "nijisanji"
+    },
+    {
+      "display_name": "maria-marionette",
+      "keywords": ["Maria Marionette", "マリア マリオネット", "maria-marionette"],
+      "store_url": "https://shop.nijisanji.jp/4022",
+      "store_type": "nijisanji"
+    },
+    {
+      "display_name": "tsuna-nekota",
+      "keywords": ["猫汰つな", "猫汰 つな", "tsuna-nekota"],
+      "store_url": "https://store.vspo.jp/collections/tsuna-nekota",
+      "store_type": "shopify"
+    },
+    {
+      "display_name": "tenkei-forte",
+      "keywords": ["天帝フォルテ", "tenkei-forte"],
+      "store_url": "https://www.neoporte-webshop.com",
+      "store_type": "shopify_search",
+      "search_query": "天帝フォルテ"
+    },
+    {
+      "display_name": "elizabeth-rose-bloodflame",
+      "keywords": ["Elizabeth Rose Bloodflame", "エリザベス・ローズ・ブラッドフレイム"],
+      "store_url": "https://shop.hololivepro.com/collections/elizabethrosebloodflame",
+      "store_type": "shopify"
+    },
+    {
+      "display_name": "nerissa-ravencroft",
+      "keywords": ["Nerissa Ravencroft", "ネリッサ・レイヴンクロフト"],
+      "store_url": "https://shop.hololivepro.com/collections/nerissaravencroft",
+      "store_type": "shopify"
     }
   ]
 }

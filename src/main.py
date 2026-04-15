@@ -8,6 +8,10 @@ from settings import load_env_settings, load_members
 from fetchers.nijisanji_store import create_session, fetch_html
 #parsersのnijisanji_parserからparse_member_items関数をインポート
 from parsers.nijisanji_parser import parse_member_items
+
+from fetchers.shopify_store import fetch_shopify_products, fetch_shopify_search
+from parsers.shopify_parser import parse_shopify_products
+
 #filtersのitem_filterからbuild_item_label, build_sort_key, detect_sale_status, should_include_item関数をインポート
 from filters.item_filter import (
     build_item_label,
@@ -59,19 +63,40 @@ def main() -> None:
         print(f"対象: {member_name}")   #
         print(f"URL: {store_url}")  #
 
-        try:    #失敗するまで繰り返す
-            html = fetch_html(session, store_url)   #fetch_html関数を呼び出して、引数にsessionとstore_urlを渡し、その返り値をhtmlに代入
-        except requests.RequestException as e:  #
-            print(f"取得失敗: {member_name}")   #
-            print(f"理由: {e}") #
-            failed_members.append((member_name, str(e)))    #
-            continue    #繰り返す
-        
-        items = parse_member_items(
-            html=html,
-            base_url=store_url,
-            member_name=member_name,
-        )   #parse_member_items関数を呼び出して、引数にhtml、base_url=store_url、member_nameを渡し、その返り値をitemsに代入
+        store_type = member.get("store_type", "nijisanji")
+
+        try:
+            if store_type == "nijisanji":
+                html = fetch_html(session, store_url)
+                items = parse_member_items(
+                    html=html,
+                    base_url=store_url,
+                    member_name=member_name,
+                )
+            elif store_type == "shopify":
+                products = fetch_shopify_products(session, store_url)
+                items = parse_shopify_products(
+                    products=products,
+                    base_url=store_url,
+                    member_name=member_name,
+                )
+            elif store_type == "shopify_search":
+                search_query = member.get("search_query", member_name)
+                products = fetch_shopify_search(session, store_url, search_query)
+                items = parse_shopify_products(
+                    products=products,
+                    base_url=store_url,
+                    member_name=member_name,
+                )
+            else:
+                print(f"未対応のstore_type: {store_type}")
+                continue
+
+        except requests.RequestException as e:
+            print(f"取得失敗: {member_name}")
+            print(f"理由: {e}")
+            failed_members.append((member_name, str(e)))
+            continue
 
         filtered_items = [item for item in items if should_include_item(item)]     #リストを用意しitemsからitemを一つずつ取り出してshould_include_item関数に渡し、Trueを返すものだけをfiltered_itemsに代入
 
