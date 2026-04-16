@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>グッズ管理画面</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f5f5f5; }
+        h1 { color: #333; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+        th { background: #4a90d9; color: white; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        a { color: #4a90d9; }
+        .on_sale { color: green; font-weight: bold; }
+        .upcoming { color: orange; font-weight: bold; }
+        .unknown { color: gray; }
+    </style>
+</head>
+<body>
+    <h1>VTuberグッズ管理画面</h1>
+    <p>商品数: {{ items|length }}件</p>
+    <table>
+        <tr>
+            <th>メンバー</th>
+            <th>商品名</th>
+            <th>ステータス</th>
+            <th>初回検出日</th>
+        </tr>
+        {% for item in items %}
+        <tr>
+            <td>{{ item[5] or "-" }}</td>
+            <td><a href="{{ item[2] }}" target="_blank">{{ item[1] }}</a></td>
+            <td class="{{ item[3] }}">{{ item[3] }}</td>
+            <td>{{ item[4][:10] if item[4] else "-" }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

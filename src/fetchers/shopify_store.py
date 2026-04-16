@@ -2,11 +2,6 @@ import requests
 
 
 def fetch_shopify_products(session: requests.Session, store_url: str) -> list[dict]:
-    """
-    Shopifyストアのproducts.json APIから商品一覧を取得する。
-    store_url は collections/メンバー名 形式のURL。
-    """
-    # URLの末尾スラッシュを除いて /products.json を追加
     base = store_url.rstrip("/")
     api_url = f"{base}/products.json?limit=250"
 
@@ -18,16 +13,38 @@ def fetch_shopify_products(session: requests.Session, store_url: str) -> list[di
 
 
 def fetch_shopify_search(session: requests.Session, base_url: str, query: str) -> list[dict]:
-    """
-    Shopifyストアの全商品からキーワードでフィルタして返す。
-    """
-    api_url = f"{base_url.rstrip('/')}/collections/all/products.json"
-    params = {"limit": 250}
+    from urllib.parse import quote, urlparse
+    from bs4 import BeautifulSoup
 
-    response = session.get(api_url, params=params, timeout=(10, 40))
+    url = f"{base_url.rstrip('/')}/search?q={quote(query)}&type=product"
+    response = session.get(url, timeout=(10, 40))
     response.raise_for_status()
 
-    all_products = response.json().get("products", [])
+    soup = BeautifulSoup(response.text, "lxml")
+    parsed = urlparse(base_url)
+    domain = f"{parsed.scheme}://{parsed.netloc}"
 
-    # タイトルにキーワードが含まれるものだけ返す
-    return [p for p in all_products if query in p.get("title", "")]
+    products = []
+    for a_tag in soup.find_all("a", href=True):
+        href = a_tag.get("href", "")
+        if "/products/" not in href:
+            continue
+
+        span = a_tag.find("span", class_="prod-title")
+        if not span:
+            continue
+
+        title = span.get_text(strip=True)
+        if not title:
+            continue
+
+        full_url = domain + href.split("?")[0]
+        handle = href.split("/products/")[-1].split("?")[0]
+
+        products.append({
+            "title": title,
+            "handle": handle,
+            "variants": [],
+        })
+
+    return products
