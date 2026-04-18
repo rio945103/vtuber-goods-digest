@@ -14,11 +14,92 @@
         .on_sale { color: green; font-weight: bold; }
         .upcoming { color: orange; font-weight: bold; }
         .unknown { color: gray; }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 16px;
+            border-bottom: 2px solid #4a90d9;
+        }
+        .tab {
+            padding: 10px 20px;
+            background: #e0e0e0;
+            color: #333;
+            text-decoration: none;
+            border-radius: 6px 6px 0 0;
+            font-weight: bold;
+        }
+        .tab:hover {
+            background: #d0d0d0;
+        }
+        .tab.active {
+            background: #4a90d9;
+            color: white;
+        }
+        .tab .count {
+            font-size: 0.85em;
+            font-weight: normal;
+            margin-left: 4px;
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .chip {
+            padding: 6px 14px;
+            background: white;
+            color: #333;
+            text-decoration: none;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+        .chip:hover {
+            background: #eef5fc;
+            border-color: #4a90d9;
+        }
+        .chip.active {
+            background: #4a90d9;
+            color: white;
+            border-color: #4a90d9;
+        }
+        .chip .count {
+            font-size: 0.85em;
+            margin-left: 4px;
+            opacity: 0.85;
+        }
     </style>
 </head>
 <body>
     <h1>VTuberグッズ管理画面</h1>
-    <p>商品数: {{ items|length }}件</p>
+
+    <div class="tabs">
+        <a href="?agency=all" class="tab {% if selected_agency == 'all' %}active{% endif %}">
+            すべて<span class="count">({{ agency_counts['all'] }})</span>
+        </a>
+        {% for key, label in agency_labels.items() %}
+        <a href="?agency={{ key }}" class="tab {% if selected_agency == key %}active{% endif %}">
+            {{ label }}<span class="count">({{ agency_counts[key] }})</span>
+        </a>
+        {% endfor %}
+    </div>
+
+    <div class="chips">
+        <a href="?agency={{ selected_agency }}&member=all" class="chip {% if selected_member == 'all' %}active{% endif %}">
+            全員
+        </a>
+        {% for m in visible_members %}
+        <a href="?agency={{ selected_agency }}&member={{ m.display_name }}" class="chip {% if selected_member == m.display_name %}active{% endif %}">
+            {{ m.display_name }}<span class="count">({{ member_counts[m.display_name] }})</span>
+        </a>
+        {% endfor %}
+    </div>
+
+    <p>表示件数: {{ items|length }}件</p>
+
     <table>
         <tr>
             <th>メンバー</th>
