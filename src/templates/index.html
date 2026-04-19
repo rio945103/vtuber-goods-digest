@@ -71,31 +71,58 @@
             margin-left: 4px;
             opacity: 0.85;
         }
+
+        .filter-section {
+            margin-bottom: 16px;
+        }
+        .filter-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <h1>VTuberグッズ管理画面</h1>
 
     <div class="tabs">
-        <a href="?agency=all" class="tab {% if selected_agency == 'all' %}active{% endif %}">
+        <a href="?agency=all&status={{ selected_status }}" class="tab {% if selected_agency == 'all' %}active{% endif %}">
             すべて<span class="count">({{ agency_counts['all'] }})</span>
         </a>
         {% for key, label in agency_labels.items() %}
-        <a href="?agency={{ key }}" class="tab {% if selected_agency == key %}active{% endif %}">
+        <a href="?agency={{ key }}&status={{ selected_status }}" class="tab {% if selected_agency == key %}active{% endif %}">
             {{ label }}<span class="count">({{ agency_counts[key] }})</span>
         </a>
         {% endfor %}
     </div>
 
-    <div class="chips">
-        <a href="?agency={{ selected_agency }}&member=all" class="chip {% if selected_member == 'all' %}active{% endif %}">
-            全員
-        </a>
-        {% for m in visible_members %}
-        <a href="?agency={{ selected_agency }}&member={{ m.display_name }}" class="chip {% if selected_member == m.display_name %}active{% endif %}">
-            {{ m.display_name }}<span class="count">({{ member_counts[m.display_name] }})</span>
-        </a>
-        {% endfor %}
+    <div class="filter-section">
+        <div class="filter-label">ライバー</div>
+        <div class="chips">
+            <a href="?agency={{ selected_agency }}&member=all&status={{ selected_status }}" class="chip {% if selected_member == 'all' %}active{% endif %}">
+                全員
+            </a>
+            {% for m in visible_members %}
+            <a href="?agency={{ selected_agency }}&member={{ m.display_name }}&status={{ selected_status }}" class="chip {% if selected_member == m.display_name %}active{% endif %}">
+                {{ m.display_name }}<span class="count">({{ member_counts[m.display_name] }})</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="filter-section">
+        <div class="filter-label">ステータス</div>
+        <div class="chips">
+            <a href="?agency={{ selected_agency }}&member={{ selected_member }}&status=all" class="chip {% if selected_status == 'all' %}active{% endif %}">
+                すべて<span class="count">({{ status_counts['all'] }})</span>
+            </a>
+            {% for key, label in status_labels.items() %}
+            <a href="?agency={{ selected_agency }}&member={{ selected_member }}&status={{ key }}" class="chip {% if selected_status == key %}active{% endif %}">
+                {{ label }}<span class="count">({{ status_counts[key] }})</span>
+            </a>
+            {% endfor %}
+        </div>
     </div>
 
     <p>表示件数: {{ items|length }}件</p>

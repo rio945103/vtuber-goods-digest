@@ -1,4 +1,4 @@
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 from models import StoreItem
 
 
@@ -21,8 +21,6 @@ def parse_shopify_products(
             continue
 
         # 商品URLを組み立てる
-        # base_urlからドメイン部分だけ取り出す
-        from urllib.parse import urlparse
         parsed = urlparse(base_url)
         domain = f"{parsed.scheme}://{parsed.netloc}"
         full_url = f"{domain}/products/{handle}"
@@ -39,6 +37,13 @@ def parse_shopify_products(
             if price:
                 price_str = f"¥{int(float(price)):,}"
 
+        # 在庫状況を判定：どれか1つでもavailableならTrue
+        available = False
+        for variant in variants:
+            if variant.get("available", False):
+                available = True
+                break
+
         raw_text = f"{title} {price_str}".strip()
 
         item = StoreItem(
@@ -47,6 +52,7 @@ def parse_shopify_products(
             url=full_url,
             raw_text=raw_text,
             source_type="goods",
+            available=available,
         )
         items.append(item)
 

@@ -1,7 +1,12 @@
 import requests
+from bs4 import BeautifulSoup
+from models import StoreItem
 
 
 def fetch_shopify_products(session: requests.Session, store_url: str) -> list[dict]:
+    """
+    Shopifyストアのproducts.json APIから商品一覧を取得する。
+    """
     base = store_url.rstrip("/")
     api_url = f"{base}/products.json?limit=250"
 
@@ -13,38 +18,31 @@ def fetch_shopify_products(session: requests.Session, store_url: str) -> list[di
 
 
 def fetch_shopify_search(session: requests.Session, base_url: str, query: str) -> list[dict]:
-    from urllib.parse import quote, urlparse
-    from bs4 import BeautifulSoup
+    """
+    HTMLスクレイピングで商品を取得する（Neo-Porte用）。
+    products.json形式のdictのリストを返す（shopify_parserと互換）。
+    """
+    search_url = f"{base_url.rstrip('/')}/search"
+    params = {"q": query, "type": "product"}
 
-    url = f"{base_url.rstrip('/')}/search?q={quote(query)}&type=product"
-    response = session.get(url, timeout=(10, 40))
+    response = session.get(search_url, params=params, timeout=(10, 40))
     response.raise_for_status()
 
     soup = BeautifulSoup(response.text, "lxml")
-    parsed = urlparse(base_url)
-    domain = f"{parsed.scheme}://{parsed.netloc}"
-
     products = []
-    for a_tag in soup.find_all("a", href=True):
+
+    for a_tag in soup.select("a[href*='/products/']"):
         href = a_tag.get("href", "")
-        if "/products/" not in href:
+        title = a_tag.get_text(strip=True)
+        if not title or not href:
             continue
-
-        span = a_tag.find("span", class_="prod-title")
-        if not span:
+        handle = href.split("/products/")[-1].split("?")[0].strip("/")
+        if not handle:
             continue
-
-        title = span.get_text(strip=True)
-        if not title:
-            continue
-
-        full_url = domain + href.split("?")[0]
-        handle = href.split("/products/")[-1].split("?")[0]
-
         products.append({
             "title": title,
             "handle": handle,
-            "variants": [],
+            "variants": [{"available": True, "price": "0"}],
         })
 
     return products

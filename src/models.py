@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
@@ -8,3 +9,4 @@ class StoreItem:
     url: str
     raw_text: str
     source_type: str  # goods
+    available: Optional[bool] = None  # Shopify系はTrue/False、にじさんじはNone

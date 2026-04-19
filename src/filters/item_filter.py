@@ -28,6 +28,10 @@ def should_include_item(item: StoreItem) -> bool:
     if any(word in text for word in EXCLUDE_WORDS):
         return False
 
+    # Shopify系で在庫なしと判明している商品は除外
+    if item.available is False:
+        return False
+
     return True
 
 

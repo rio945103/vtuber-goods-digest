@@ -21,21 +21,23 @@ AGENCY_LABELS = {
     "neoporte": "Neo-Porte",
 }
 
+STATUS_LABELS = {
+    "on_sale": "発売中",
+    "upcoming": "発売予定",
+    "unknown": "不明",
+}
+
 
 def load_members():
     with open(MEMBERS_PATH, encoding="utf-8") as f:
         return json.load(f)["members"]
 
 
-def build_member_to_agency():
-    members = load_members()
-    return {m["display_name"]: m["agency"] for m in members}
-
-
 @app.route("/")
 def index():
     selected_agency = request.args.get("agency", "all")
     selected_member = request.args.get("member", "all")
+    selected_status = request.args.get("status", "all")
 
     conn = connect_db(db_path)
     cursor = conn.execute("""
@@ -71,6 +73,7 @@ def index():
             "row": item,
             "agency": agency,
             "members": member_list,
+            "status": item[3],
         })
 
     # 絞り込み
@@ -79,6 +82,8 @@ def index():
         if selected_agency != "all" and entry["agency"] != selected_agency:
             continue
         if selected_member != "all" and selected_member not in entry["members"]:
+            continue
+        if selected_status != "all" and entry["status"] != selected_status:
             continue
         filtered_items.append(entry["row"])
 
@@ -90,7 +95,15 @@ def index():
         if entry["agency"] in agency_counts:
             agency_counts[entry["agency"]] += 1
 
-    # 選択中の事務所に所属するメンバーのリスト（チップ表示用）
+    # ステータスごとの件数
+    status_counts = {"all": len(all_items)}
+    for key in STATUS_LABELS.keys():
+        status_counts[key] = 0
+    for entry in items_with_meta:
+        if entry["status"] in status_counts:
+            status_counts[entry["status"]] += 1
+
+    # 選択中の事務所に所属するメンバーのリスト
     if selected_agency == "all":
         visible_members = members_data
     else:
@@ -108,8 +121,11 @@ def index():
         items=filtered_items,
         selected_agency=selected_agency,
         selected_member=selected_member,
+        selected_status=selected_status,
         agency_labels=AGENCY_LABELS,
         agency_counts=agency_counts,
+        status_labels=STATUS_LABELS,
+        status_counts=status_counts,
         visible_members=visible_members,
         member_counts=member_counts,
     )
