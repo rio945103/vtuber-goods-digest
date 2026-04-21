@@ -50,6 +50,7 @@ def index():
             GROUP_CONCAT(im.member_name, ', ') AS members
         FROM items i
         LEFT JOIN item_members im ON i.id = im.item_id
+        WHERE i.current_status = 'on_sale'
         GROUP BY i.id
         ORDER BY i.first_seen_at DESC
     """)
