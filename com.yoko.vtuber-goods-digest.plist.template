@@ -7,7 +7,9 @@
   登録:   launchctl load ~/Library/LaunchAgents/com.yoko.vtuber-goods-digest.plist
   解除:   launchctl unload ~/Library/LaunchAgents/com.yoko.vtuber-goods-digest.plist
 
-  実行時刻は毎日 06:00 JST（元 Windows タスクスケジューラの登録と同じ）。
+  実行時刻は毎日 03:10 JST。tech_research(03:00実行)と同じpmset起床ウィンドウ(02:55起床)に
+  相乗りさせるため、元Windowsタスクスケジューラの06:00から変更した。pmset repeatは起床予約を
+  1つしか持てないため、複数ジョブは同じ起床ウィンドウにまとめる方針。
 -->
 <plist version="1.0">
 <dict>
@@ -23,9 +25,9 @@
     <key>StartCalendarInterval</key>
     <dict>
         <key>Hour</key>
-        <integer>6</integer>
+        <integer>3</integer>
         <key>Minute</key>
-        <integer>0</integer>
+        <integer>10</integer>
     </dict>
 
     <key>StandardOutPath</key>
