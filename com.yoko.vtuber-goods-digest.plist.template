@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd テンプレート。MacBook セットアップ時に以下を置換してから配置する:
+    <USER> -> 実際のユーザー名（例: yoko）
+  配置先: ~/Library/LaunchAgents/com.yoko.vtuber-goods-digest.plist
+  登録:   launchctl load ~/Library/LaunchAgents/com.yoko.vtuber-goods-digest.plist
+  解除:   launchctl unload ~/Library/LaunchAgents/com.yoko.vtuber-goods-digest.plist
+
+  実行時刻は毎日 06:00 JST（元 Windows タスクスケジューラの登録と同じ）。
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.yoko.vtuber-goods-digest</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/<USER>/repos/vtuber_goods_digest/run_mac.sh</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>6</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/<USER>/repos/vtuber_goods_digest/logs/launchd.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/<USER>/repos/vtuber_goods_digest/logs/launchd.err.log</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>
